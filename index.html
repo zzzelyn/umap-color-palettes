@@ -40,6 +40,9 @@
   .copyall{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
   .copyall button{font-size:11.5px;border:1px solid #D8D2BE;background:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;color:#555}
   .copyall button:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .gradbar{height:14px;border-radius:7px;margin-bottom:10px;cursor:pointer;transition:transform .12s}
+  .gradbar:hover{transform:scaleY(1.4);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .glabel{font-size:10.5px;color:var(--muted);margin:-6px 0 10px;letter-spacing:.3px}
   .note{margin-top:26px;background:#FFF9E8;border:1px solid #EFE3B8;border-radius:12px;padding:14px 18px;font-size:13px;line-height:1.9}
   .note b{color:#9A7B1C}
   footer{margin-top:34px;text-align:center;color:#B9B29A;font-size:11.5px;line-height:1.8}
@@ -132,6 +135,13 @@ function swatchHTML(colors){
   }
   return `<div class="sw">${colors.map(c=>`<div style="background:${c}" data-hex="${c}" title="${c}"></div>`).join('')}</div>`;
 }
+/* 渐变预览条：仅对渐变类（mono/div/rain）生成；用该组颜色拼成 linear-gradient，更直观看到过渡效果 */
+function gradHTML(p){
+  if(p.type === 'cell') return '';
+  const stops = p.colors.join(', ');
+  const css = `linear-gradient(to right, ${stops})`;
+  return `<div class="gradbar" data-css="${css}" style="background:${css}" title="点击复制 CSS 渐变代码"></div><div class="glabel">↑ 用本组颜色生成的渐变预览（点条可复制 CSS 渐变）</div>`;
+}
 /* 渲染：按 groups 顺序输出板块；若数据里出现 groups 中没有的 type，自动补一个板块兜底（标题用 type 名） */
 const content = document.getElementById('content');
 const typesInData = [...new Set(palettes.map(p=>p.type))];
@@ -147,6 +157,7 @@ order.forEach(type=>{
     card.innerHTML = `
       <h3>${p.name}</h3><div class="use">${p.use} · ${p.colors.length} 色</div>
       ${swatchHTML(p.colors)}
+      ${gradHTML(p)}
       <div class="hexrow">${p.colors.map(c=>`<span class="chip" data-hex="${c}">${c}</span>`).join('')}</div>
       <div class="copyall">
         <button data-r="${p.colors.join(' ')}">复制 R 向量</button>
@@ -212,6 +223,7 @@ document.addEventListener('click', e=>{
   const t = e.target;
   if(!t) return;
   if(t.dataset.hex) return copyText(t.dataset.hex);
+  if(t.dataset.css) return copyText(t.dataset.css);
   if(t.dataset.r)   return copyText('c("' + t.dataset.r.trim().split(/\s+/).join('", "') + '")');
   if(t.dataset.p)   return copyText('["' + t.dataset.p.trim().split(/\s+/).join('", "') + '"]');
 });
