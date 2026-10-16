@@ -43,6 +43,8 @@
   .gradbar{height:14px;border-radius:7px;margin-bottom:10px;cursor:pointer;transition:transform .12s}
   .gradbar:hover{transform:scaleY(1.4);box-shadow:0 2px 8px rgba(0,0,0,.18)}
   .glabel{font-size:10.5px;color:var(--muted);margin:-6px 0 10px;letter-spacing:.3px}
+  .umap{display:block;width:100%;border-radius:10px;margin-bottom:4px;background:#fff;border:1px solid #EEE8D8}
+  .ucap{font-size:10.5px;color:var(--muted);text-align:center;margin-bottom:10px}
   .note{margin-top:26px;background:#FFF9E8;border:1px solid #EFE3B8;border-radius:12px;padding:14px 18px;font-size:13px;line-height:1.9}
   .note b{color:#9A7B1C}
   footer{margin-top:34px;text-align:center;color:#B9B29A;font-size:11.5px;line-height:1.8}
@@ -151,11 +153,18 @@ order.forEach(type=>{
   const sec = document.createElement('section');
   sec.innerHTML = `<h2>${g.title} <span class="tag">${g.tag}</span></h2><div class="sub">${g.sub}</div><div class="grid"></div>`;
   const grid = sec.querySelector('.grid');
+  let k = 0; /* cell 板块内序号，对应 assets/umap_XX.png（由 tools/gen_umap_previews.py 生成） */
   palettes.filter(p=>p.type===type).forEach(p=>{
+    k++;
+    /* 细胞类型板块：顶部插入 UMAP 效果示意图（脚本合成，图片缺失时自动隐藏） */
+    const umapImg = type==='cell'
+      ? `<img class="umap" src="assets/umap_${String(k).padStart(2,'0')}.png" alt="UMAP 效果示意" loading="lazy" onerror="this.style.display='none'"><div class="ucap">UMAP 效果示意（合成示例）</div>`
+      : '';
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <h3>${p.name}</h3><div class="use">${p.use} · ${p.colors.length} 色</div>
+      ${umapImg}
       ${swatchHTML(p.colors)}
       ${gradHTML(p)}
       <div class="hexrow">${p.colors.map(c=>`<span class="chip" data-hex="${c}">${c}</span>`).join('')}</div>
