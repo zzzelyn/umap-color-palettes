@@ -2,7 +2,7 @@
 
 > 单细胞分析中，画**细胞类型**用离散多色（一色一类细胞），画**基因表达 / score** 用连续渐变色——两套色板不要混用。
 
-👉 **在线访问：<https://zzzelyn.github.io/umap-color-palettes/>**（首次需先开启 GitHub Pages，见下方「部署」，开启后此链接即可直接点开）
+👉 **在线访问：<https://zzzelyn.github.io/umap-color-palettes/>
 
 ## 功能
 
