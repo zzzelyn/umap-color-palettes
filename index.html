@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UMAP 科研配色卡</title>
+<style>
+  /* 配色卡页面样式 */
+  :root{
+    --bg:#F9F6EB;        /* 页面米白底 */
+    --card:#FFFFFF;
+    --ink:#2B2B2B;
+    --muted:#8A8A8A;
+    --gold:#CFAF3A;      /* 金色点缀 */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei",sans-serif;padding:32px 16px 64px}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{text-align:center;margin-bottom:8px}
+  header h1{font-size:26px;letter-spacing:1px}
+  header h1 em{font-style:normal;color:var(--gold);font-weight:800;margin-right:6px}
+  header p{color:var(--muted);font-size:13px;margin-top:6px}
+  .rule{border:none;border-top:1px dashed #D8D2BE;margin:18px 0 26px}
+  h2{font-size:17px;margin:30px 0 4px;display:flex;align-items:center;gap:8px}
+  h2 .tag{font-size:11px;background:var(--gold);color:#fff;border-radius:4px;padding:2px 8px;font-weight:400}
+  .sub{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .card h3{font-size:14.5px;margin-bottom:2px}
+  .card .use{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .sw{display:flex;border-radius:10px;overflow:hidden;height:56px;margin-bottom:10px}
+  .sw div{flex:1;position:relative;cursor:pointer;transition:transform .12s}
+  .sw div:hover{transform:scale(1.06);z-index:2;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .grid-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:5px;margin-bottom:10px}
+  .csw{height:30px;border-radius:6px;cursor:pointer;transition:transform .12s}
+  .csw:hover{transform:scale(1.14);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+  .hexrow{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;font-family:Menlo,Consolas,monospace;background:#F4F1E6;border:1px solid #E4DEC9;border-radius:5px;padding:2px 7px;cursor:pointer}
+  .chip:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .copyall{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .copyall button{font-size:11.5px;border:1px solid #D8D2BE;background:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;color:#555}
+  .copyall button:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .note{margin-top:26px;background:#FFF9E8;border:1px solid #EFE3B8;border-radius:12px;padding:14px 18px;font-size:13px;line-height:1.9}
+  .note b{color:#9A7B1C}
+  footer{margin-top:34px;text-align:center;color:#B9B29A;font-size:11.5px;line-height:1.8}
+  #toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);background:#2B2B2B;color:#fff;font-size:13px;padding:8px 18px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9999}
+  #toast.show{opacity:.92}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><em>UMAP</em> 科研配色卡</h1>
+    <p>点击色块 / HEX 复制单色，点按钮复制整组向量（R / Python）</p>
+  </header>
+  <hr class="rule">
+  <div id="content"></div>
+
+  <div class="note">
+    <b>使用说明：</b><br>
+    ① 点击任意色块或下方的 HEX 标签即可复制该颜色；点「复制 R 向量 / 复制 Python 向量」可整组复制，直接粘进 Seurat / Scanpy 使用。<br>
+    ② 画<b>细胞类型</b>用离散多色（一色对应一类细胞），画<b>基因表达 / score</b> 用连续渐变色——两套色板请不要混用。<br>
+    ③ 配色按用途分四类：单色渐变（基因表达）、冷暖双色发散（score / 上·下调）、彩虹渐变（拟时序），以及细胞类型分类（离散多色）。
+  </div>
+
+  <footer>
+    配色取自科研配色「单细胞测序专栏」系列，已按图像像素核对
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   配色数据：新增一套 = 在下面数组加一个对象即可
+   type: 'mono' 单色渐变 | 'div' 冷暖双色发散 | 'rain' 彩虹渐变
+   ============================================================ */
+const palettes = [
+  // —— 单色渐变（基因表达 / feature plot）——
+  {type:'mono', name:'玫红渐变', use:'基因表达（示例 MgII）· 深粉→浅粉', colors:['#DA3869','#F4A3B1','#FBCCD3','#FDE7E9']},
+  {type:'mono', name:'砖红渐变', use:'基因表达（示例 LDHA）· 深红→浅灰粉', colors:['#D93A33','#D87160','#DA968A','#D8C8C4']},
+  {type:'mono', name:'蓝紫渐变', use:'基因表达（示例 CD54）· 深蓝紫→浅紫', colors:['#3954A4','#57509D','#8877B5','#AB98C2','#C5B9D2']},
+  {type:'mono', name:'酒红渐变', use:'CAR T 应答 score · 浅沙→深酒红', colors:['#DFC19B','#D69790','#B16067','#874341']},
+  {type:'mono', name:'暮色渐变', use:'最大相似度 / fetal score · 黄→橙→紫黑', colors:['#FEE37A','#DF7E47','#B04B7B','#1A132D']},
+  {type:'mono', name:'Viridis 风', use:'CytoTRACE（黄绿→青→深紫）', colors:['#E0E618','#27AF83','#2E7590','#480E63']},
+  {type:'mono', name:'DEG 上调 · 红 6 阶', use:'上调基因数目 UMAP（示例图左）', colors:['#AA1015','#C52120','#DF362A','#F16C50','#FD9B7E','#FED3C2']},
+  {type:'mono', name:'DEG 下调 · 蓝 6 阶', use:'下调基因数目 UMAP（示例图右）', colors:['#10569E','#3177B5','#4994C5','#83B7D7','#ACCEE6','#CFE2F1']},
+
+  // —— 冷暖双色发散（score 类 / 上、下调 DEG）——
+  {type:'div', name:'墨绿—沙金', use:'Spatial Log2FC（Children↔Older）', colors:['#175853','#8EA8A7','#DDC7A6','#CAA263']},
+  {type:'div', name:'雾蓝—珊瑚', use:'Spatial Log2FC（Negative↔Positive）', colors:['#3F91C1','#BDD8EA','#F1D3CF','#DC7765']},
+  {type:'div', name:'红—蓝 柔和', use:'EGR1 表达 · 低饱和红蓝发散', colors:['#DA5564','#F2C4CA','#B9D6E8','#4E99C6']},
+  {type:'div', name:'红—青 暖调', use:'基因表达 · 红橙→浅绿→青', colors:['#E24D2D','#FDC97F','#D0EAAE','#66A1B2']},
+  {type:'div', name:'正红—绿—蓝', use:'Cell cycle score（High↔Low）高对比', colors:['#E23F23','#FDAB61','#A6D76B','#237FB8']},
+  {type:'div', name:'砖红—粉—蓝', use:'Cell cycle score 柔和版', colors:['#C33B3B','#FCD5C0','#C2DCEC','#337EB8']},
+  {type:'div', name:'红—蓝 5 阶', use:'Senescence score · 红→浅蓝→蓝', colors:['#E72F33','#F2999B','#C4DAEA','#77ACD1','#4288BD']},
+
+  // —— 彩虹渐变（拟时序 / CytoTRACE）——
+  {type:'rain', name:'浅彩虹 5 色', use:'Pseudotime（低饱和，白底友好）', colors:['#C32C4B','#FCD07E','#FCFEBC','#ABDDA4','#4C66AC']},
+  {type:'rain', name:'亮彩虹 5 色', use:'CytoTRACE scores（高饱和）', colors:['#C42A4A','#FA9E59','#FCD80E','#92D2A2','#4570B3']},
+  {type:'rain', name:'经典彩虹 5 色', use:'CytoTRACE（More diff.→Less diff.）', colors:['#B21847','#F88C50','#FDD71E','#C2E59E','#4097B3']},
+  {type:'rain', name:'莫兰迪彩虹 4 色', use:'CytoTRACE（复古低饱和）', colors:['#AC443E','#E5CE7E','#B7D290','#48639A']},
+  {type:'rain', name:'LM score 彩虹 5 色', use:'LM score / 通用有序变量', colors:['#BB2248','#F6824D','#FDF0A8','#A9DBA3','#397EB7']},
+
+  // —— 细胞类型分类（离散多色，一色一类）——
+  {type:'cell', name:'细胞类型分类 41 色', use:'离散多色 · 直接当分类调色板使用', colors:['#FFFF00','#E31A1C','#D7E3FF','#A1CAF1','#C2B280','#999999','#F38400','#00FF00','#A020F0','#509DEA','#FF2F80','#FE4945','#FFE4E1','#E25822','#00C2A0','#4FC601','#FFAA92','#FDC086','#FF4A9C','#E68FAC','#F781BF','#8FB0FF','#63FFAC','#1CE6FF','#41AB5D','#0000A6','#FFFF99','#FFF300','#F6A600','#FF1493','#BC321A','#FF90C9','#3B5DFF','#FF34FF','#1E90FF','#F99379','#74C476','#7B4F4B','#A30059','#DCD300','#363636']}
+];
+
+/* 分区（板块）标题配置：新增板块 = 在此加一行即可，type 与下方 palettes 里的 type 对应 */
+const groups = {
+  mono:{title:'一、单色渐变', tag:'基因表达 / feature plot', sub:'深浅代表表达量高低，适用于 FeaturePlot、gene score 展示。'},
+  div :{title:'二、冷暖双色发散', tag:'score 类 / 上、下调 DEG', sub:'中间浅、两端深，适合 cell cycle / senescence score、Spatial Log2FC 等含正负方向的数据。'},
+  rain:{title:'三、彩虹渐变', tag:'拟时序 / CytoTRACE', sub:'红→黄→绿→蓝顺序渐变，适合 pseudotime、CytoTRACE、分化程度等有序连续变量。'},
+  cell:{title:'四、细胞类型分类', tag:'离散多色 / 一色一类', sub:'给不同细胞亚群上色，每类一色；可直接作为 Seurat / Scanpy 的离散分类调色板。'}
+};
+
+/* 色块渲染：少量颜色用横向色条；多色（如细胞类型分类）用换行网格 */
+function swatchHTML(colors){
+  if(colors.length > 10){
+    return `<div class="grid-sw">${colors.map(c=>`<div class="csw" style="background:${c}" data-hex="${c}" title="${c}"></div>`).join('')}</div>`;
+  }
+  return `<div class="sw">${colors.map(c=>`<div style="background:${c}" data-hex="${c}" title="${c}"></div>`).join('')}</div>`;
+}
+/* 渲染：按 groups 顺序输出板块；若数据里出现 groups 中没有的 type，自动补一个板块兜底（标题用 type 名） */
+const content = document.getElementById('content');
+const typesInData = [...new Set(palettes.map(p=>p.type))];
+const order = [...Object.keys(groups), ...typesInData.filter(t=>!groups[t])];
+order.forEach(type=>{
+  const g = groups[type] || {title:type, tag:'', sub:''};
+  const sec = document.createElement('section');
+  sec.innerHTML = `<h2>${g.title} <span class="tag">${g.tag}</span></h2><div class="sub">${g.sub}</div><div class="grid"></div>`;
+  const grid = sec.querySelector('.grid');
+  palettes.filter(p=>p.type===type).forEach(p=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${p.name}</h3><div class="use">${p.use} · ${p.colors.length} 色</div>
+      ${swatchHTML(p.colors)}
+      <div class="hexrow">${p.colors.map(c=>`<span class="chip" data-hex="${c}">${c}</span>`).join('')}</div>
+      <div class="copyall">
+        <button data-r="${p.colors.join(' ')}">复制 R 向量</button>
+        <button data-p="${p.colors.join(' ')}">复制 Python 向量</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  content.appendChild(sec);
+});
+
+/* ============ 复制逻辑（自动失败→手动兜底） ============ */
+const toast = document.getElementById('toast');
+function showToast(msg){
+  toast.textContent = '已复制：' + (msg.length>40 ? msg.slice(0,40)+'…' : msg);
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toast.classList.remove('show'), 1500);
+}
+function execCopy(text){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+function manualCopy(text){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;padding:18px;border-radius:10px;max-width:92%;box-shadow:0 8px 30px rgba(0,0,0,.3)';
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'width:340px;height:96px;font-family:monospace;font-size:12px;resize:none';
+  const tip = document.createElement('div');
+  tip.textContent = '自动复制被浏览器拦截，请手动 Ctrl/⌘ + C 复制';
+  tip.style.cssText = 'font-size:12px;color:#888;margin:8px 0 6px';
+  const btn = document.createElement('button');
+  btn.textContent = '关闭';
+  btn.style.cssText = 'margin-top:6px;padding:5px 16px;cursor:pointer;border:1px solid #ccc;background:#fff;border-radius:6px';
+  btn.onclick = ()=>document.body.removeChild(overlay);
+  overlay.onclick = (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); };
+  box.appendChild(tip); box.appendChild(ta); box.appendChild(btn);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  ta.focus(); ta.select();
+}
+function copyText(text){
+  const ok = execCopy(text);          // 先试 execCommand（iframe / file:// 兼容最好）
+  if(ok){ showToast(text); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast(text)).catch(()=>manualCopy(text));
+  }else{
+    manualCopy(text);
+  }
+}
+document.addEventListener('click', e=>{
+  const t = e.target;
+  if(!t) return;
+  if(t.dataset.hex) return copyText(t.dataset.hex);
+  if(t.dataset.r)   return copyText('c("' + t.dataset.r.trim().split(/\s+/).join('", "') + '")');
+  if(t.dataset.p)   return copyText('["' + t.dataset.p.trim().split(/\s+/).join('", "') + '"]');
+});
+</script>
+</body>
+</html>
